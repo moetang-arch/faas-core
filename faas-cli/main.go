@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	dummy string
+	gopath string
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&dummy, "dummy", "", "do nothing")
+	flag.StringVar(&gopath, "gopath", "", "gopath for faas-service pkg location")
 }
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 
 func run() {
 	//TODO
-	fmt.Println("run")
+	fmt.Println(makeFaasServicePkgPath(getFirstGoPath()))
 }
 
 func compile() {
