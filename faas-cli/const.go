@@ -17,4 +17,14 @@ var (
 		string(os.PathSeparator),
 		"faas-service",
 	)
+
+	golangPkgAllowedList = []string{
+		"archive",
+		"bufio",
+		"builtin",
+	}
+
+	userPkgAllowedList = []string{
+		"github.com/moetnag.-arch/faas-api",
+	}
 )

@@ -8,20 +8,12 @@ import (
 )
 
 var (
-	gopath string
-)
-
-var (
 	commands = map[string]func(){
 		"run":          run,
-		"compile":      compile,
+		"build":        build,
 		"get-core-lib": getCoreLib,
 	}
 )
-
-func init() {
-	flag.StringVar(&gopath, "gopath", "", "gopath for faas-service pkg location")
-}
 
 func main() {
 	if len(os.Args) <= 1 {
@@ -30,33 +22,24 @@ func main() {
 	}
 	if len(os.Args[1]) == 0 || os.Args[1][0] == '-' {
 		flag.PrintDefaults()
+		//TODO print commands
 		os.Exit(2)
-	}
-
-	err := flag.CommandLine.Parse(os.Args[2:])
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(3)
 	}
 
 	handler, ok := commands[os.Args[1]]
 	if !ok {
 		fmt.Println(errors.New("unknown command"))
-		os.Exit(4)
+		os.Exit(3)
 	}
 	handler()
 }
 
-func run() {
+func build() {
 	//TODO
-	fmt.Println(makeFaasServicePkgPath(getFirstGoPath()))
-}
-
-func compile() {
-	//TODO
-	fmt.Println("compile")
+	fmt.Println("build")
 }
 
 func getCoreLib() {
 	//TODO get core lib using go get
+	fmt.Println("not implement")
 }
