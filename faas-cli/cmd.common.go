@@ -63,7 +63,13 @@ func checkAndGetImports(srcFolder string) (sourcePackageName string, importPaths
 			continue
 		}
 		for _, v := range v.Imports {
-			importPaths[v.Path.Value] = struct{}{}
+			value := v.Path.Value
+			if len(value) > 2 {
+				value = value[1 : len(value)-1] // omit quotes
+				importPaths[value] = struct{}{}
+			} else {
+				panic(errors.New("import path is empty of file:" + k))
+			}
 		}
 	}
 	sourcePackageName = sourcePkg
@@ -75,7 +81,7 @@ func checkImportsValidation(importPaths map[string]struct{}, allowedPaths []stri
 	for _, v := range allowedPaths {
 		allowedMap[v] = struct{}{}
 	}
-	for k, _ := range importPaths {
+	for k := range importPaths {
 		_, ok := allowedMap[k]
 		if !ok {
 			return errors.New("import:" + k + " not allowed")
