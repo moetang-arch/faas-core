@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -17,7 +16,14 @@ func run() {
 		os.Exit(4)
 	}
 
-	packageName, imports, err := getImports(makeFaasServicePkgPath(getFirstGoPath()))
+	// working directory
+	workDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
+	packageName, imports, err := getImports(workDir)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -25,24 +31,36 @@ func run() {
 	err = checkImportsValidation(imports, append(golangPkgAllowedList, userPkgAllowedList...))
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(-1)
 	}
 
-	fmt.Println(packageName)
+	// path of faas-core
+	// default in gopath
+	var faasServiceSourcePath = makeFaasServicePkgPath(getFirstGoPath())
+
+	err = prepareBuildSrc(faasServiceSourcePath, workDir)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
+	fmt.Println(packageName, workDir, faasServiceSourcePath)
 }
 
-func getImports(pkg string) (sourcePackageName string, importPaths map[string]struct{}, err error) {
+func prepareBuildSrc(serviceSourcePath string, curDir string) error {
+	dir := curDir + string(os.PathSeparator) + ".build"
 	defer func() {
-		elem := recover()
-		if elem != nil {
-			switch elem.(type) {
-			case error:
-				err = elem.(error)
-			default:
-				err = errors.New("unknown error when processing imports")
-			}
-		}
+		os.RemoveAll(dir)
 	}()
-	sourcePackageName, importPaths = checkAndGetImports(pkg)
-	return
+	err := os.RemoveAll(dir)
+	if err != nil {
+		return err
+	}
+	dirFile, err := os.Create(dir)
+	if err != nil {
+		return err
+	}
+	dirFile.Name()
+	//TODO copy dir
+	return err
 }

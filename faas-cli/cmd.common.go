@@ -89,3 +89,19 @@ func checkImportsValidation(importPaths map[string]struct{}, allowedPaths []stri
 	}
 	return nil
 }
+
+func getImports(pkg string) (sourcePackageName string, importPaths map[string]struct{}, err error) {
+	defer func() {
+		elem := recover()
+		if elem != nil {
+			switch elem.(type) {
+			case error:
+				err = elem.(error)
+			default:
+				err = errors.New("unknown error when processing imports")
+			}
+		}
+	}()
+	sourcePackageName, importPaths = checkAndGetImports(pkg)
+	return
+}

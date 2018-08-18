@@ -19,5 +19,5 @@ func getFirstGoPath() string {
 }
 
 func makeFaasServicePkgPath(gopath string) string {
-	return fmt.Sprint(gopath, string(os.PathSeparator), faasServiceSrcPath)
+	return fmt.Sprint(gopath, string(os.PathSeparator), faasServiceSrcPathForRunCmd)
 }
