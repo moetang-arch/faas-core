@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 )
@@ -13,25 +12,41 @@ var (
 		"build":        build,
 		"get-core-lib": getCoreLib,
 	}
+	commands2 = map[string]struct {
+		Handler     func()
+		Description string
+	}{
+		"run":          {Handler: run, Description: "run faas in local environment"},
+		"build":        {Handler: build, Description: "build faas binary file"},
+		"get-core-lib": {Handler: getCoreLib, Description: "get core library of faas-core"},
+	}
 )
 
 func main() {
 	if len(os.Args) <= 1 {
-		flag.PrintDefaults()
+		fmt.Println("available command:")
+		// print commands
+		for k, v := range commands2 {
+			fmt.Println("\t" + k + "\t" + v.Description)
+		}
 		os.Exit(1)
 	}
 	if len(os.Args[1]) == 0 || os.Args[1][0] == '-' {
-		flag.PrintDefaults()
-		//TODO print commands
+		fmt.Println("unknown command:", os.Args[1])
+		fmt.Println("available command:")
+		// print commands
+		for k, v := range commands2 {
+			fmt.Println("\t" + k + "\t" + v.Description)
+		}
 		os.Exit(2)
 	}
 
-	handler, ok := commands[os.Args[1]]
+	elem, ok := commands2[os.Args[1]]
 	if !ok {
 		fmt.Println(errors.New("unknown command"))
 		os.Exit(3)
 	}
-	handler()
+	elem.Handler()
 }
 
 func build() {

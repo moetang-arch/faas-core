@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -104,4 +107,16 @@ func getImports(pkg string) (sourcePackageName string, importPaths map[string]st
 	}()
 	sourcePackageName, importPaths = checkAndGetImports(pkg)
 	return
+}
+
+func copyTo(srcDir, dstDir string) error {
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("path:", path)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	//TODO
+	return nil
 }

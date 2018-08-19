@@ -77,4 +77,10 @@ var (
 	userPkgAllowedList = []string{
 		"github.com/moetang-arch/faas-api",
 	}
+
+	generatedSourceTemplate = `
+package main
+
+import . "{{.}}"
+`
 )
