@@ -5,9 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
 )
 
 func run() {
@@ -51,31 +54,93 @@ func run() {
 
 func buildBinary(serviceSourcePath string, curDir, packageName string) error {
 	dir := curDir + string(os.PathSeparator) + ".build"
+	err := os.RemoveAll(dir)
+	if err != nil {
+		return err
+	}
 	defer func() {
 		os.RemoveAll(dir)
 	}()
+	srcDir := dir + string(os.PathSeparator) + "src"
 
-	err := prepareBuildSrc(serviceSourcePath, dir)
+	err = prepareBuildSrc(serviceSourcePath, srcDir)
 	if err != nil {
 		return err
 	}
 
-	err = prepareProjectSrc(curDir, dir)
+	err = prepareProjectSrc(curDir, srcDir, packageName)
 	if err != nil {
 		return err
 	}
 
-	err = generateProjectImport(dir, packageName)
+	err = generateProjectImport(srcDir, packageName)
 	if err != nil {
 		return err
 	}
 
-	err = buildBinaryFile0(dir, packageName)
+	binaryName := packageName + "_bin"
+	err = buildBinaryFile0(srcDir, packageName, dir, binaryName)
 	if err != nil {
 		return err
 	}
 
-	err = copyBinaryToWd(dir, curDir, packageName)
+	runBinary(srcDir, binaryName)
+
+	return nil
+}
+
+func runBinary(dir string, binaryName string) error {
+	//TODO passing parameter to run
+	cmd := exec.Command(dir + string(os.PathSeparator) + binaryName)
+
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	errOut, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := out.Read(buf)
+			if n > 0 {
+				fmt.Fprint(os.Stdout, string(buf[:n]))
+			}
+			if err != nil {
+				if err == io.EOF {
+					return
+				} else {
+					panic(err)
+				}
+			}
+		}
+	}()
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := errOut.Read(buf)
+			if n > 0 {
+				fmt.Fprint(os.Stderr, string(buf[:n]))
+			}
+			if err != nil {
+				if err == io.EOF {
+					return
+				} else {
+					panic(err)
+				}
+			}
+		}
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	fmt.Println("starting service... pid:" + strconv.Itoa(cmd.Process.Pid))
+	err = cmd.Wait()
 	if err != nil {
 		return err
 	}
@@ -83,23 +148,18 @@ func buildBinary(serviceSourcePath string, curDir, packageName string) error {
 	return nil
 }
 
-func copyBinaryToWd(buildSrcDir string, curDir, packageName string) error {
-	//TODO
-	return nil
-}
-
-func buildBinaryFile0(buildSrcDir, packageName string) error {
+func buildBinaryFile0(buildSrcDir, packageName string, altGoPath string, binaryName string) error {
 	gopath := os.Getenv("GOPATH")
 	if len(gopath) > 0 {
-		gopath = buildSrcDir + string(os.PathListSeparator) + gopath
+		gopath = altGoPath + string(os.PathListSeparator) + gopath
 	} else {
-		gopath = buildSrcDir
+		gopath = altGoPath
 	}
 
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	cmd := &exec.Cmd{
-		Args:   []string{"go", "build", "-o", packageName}, //TODO need to generate os related binary file name
+		Args:   []string{"go", "build", "-o", binaryName}, //TODO need to generate os related binary file name
 		Env:    append(os.Environ(), "GOPATH="+gopath),
 		Dir:    buildSrcDir,
 		Stderr: errBuf,
@@ -141,9 +201,30 @@ func generateProjectImport(buildSrcDir, packageName string) error {
 	return nil
 }
 
-func prepareProjectSrc(curDir string, buildSrcDir string) error {
-	//TODO
-	return nil
+func prepareProjectSrc(curDir string, buildSrcDir, packageName string) error {
+	packageFolder := buildSrcDir + string(os.PathSeparator) + packageName
+	err := os.MkdirAll(packageFolder, 0755)
+	if err != nil {
+		return err
+	}
+	// copy all file in working directory into build directory
+	err = filepath.Walk(curDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if curDir == path {
+			return nil
+		}
+		if info.IsDir() {
+			return filepath.SkipDir
+		}
+
+		err = copyFile(path, packageFolder+string(os.PathSeparator)+info.Name())
+		return err
+	})
+
+	return err
 }
 
 func prepareBuildSrc(serviceSourcePath string, dir string) error {
@@ -151,13 +232,13 @@ func prepareBuildSrc(serviceSourcePath string, dir string) error {
 	if err != nil {
 		return err
 	}
-	err = os.Mkdir(dir, 0755)
+	err = os.MkdirAll(dir, 0755)
 	if err != nil {
 		return err
 	}
 
-	// copy dir
-	err = copyTo(serviceSourcePath, dir)
+	// copy dir files
+	err = copyToWithOnlyFiles(serviceSourcePath, dir)
 
 	return nil
 }

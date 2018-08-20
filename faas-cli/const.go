@@ -81,6 +81,6 @@ var (
 	generatedSourceTemplate = `
 package main
 
-import . "{{.}}"
+import _ "{{.}}"
 `
 )

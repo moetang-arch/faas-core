@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,14 +109,41 @@ func getImports(pkg string) (sourcePackageName string, importPaths map[string]st
 	return
 }
 
-func copyTo(srcDir, dstDir string) error {
+func copyToWithOnlyFiles(srcDir, dstDir string) error {
 	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
-		fmt.Println("path:", path)
-		return nil
+		if err != nil {
+			return err
+		}
+		if srcDir == path {
+			return nil
+		}
+		if info.IsDir() {
+			return filepath.SkipDir
+		}
+
+		err = copyFile(path, dstDir+string(os.PathSeparator)+info.Name())
+		return err
 	})
 	if err != nil {
 		return err
 	}
-	//TODO
+	return nil
+}
+
+func copyFile(srcFile, dstFile string) error {
+	f, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	df, err := os.OpenFile(dstFile, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+	defer df.Close()
+	_, err = io.Copy(df, f)
+	if err != nil {
+		return err
+	}
 	return nil
 }
