@@ -84,11 +84,21 @@ func checkImportsValidation(importPaths map[string]struct{}, allowedPaths []stri
 	for _, v := range allowedPaths {
 		allowedMap[v] = struct{}{}
 	}
+LOOP:
 	for k := range importPaths {
 		_, ok := allowedMap[k]
-		if !ok {
-			return errors.New("import:" + k + " not allowed")
+		if ok {
+			continue
 		}
+
+		//TODO need a more efficient algorithm
+		for pkg := range allowedMap {
+			if strings.HasPrefix(k, pkg+string('/')) {
+				continue LOOP
+			}
+		}
+
+		return errors.New("import:" + k + " not allowed")
 	}
 	return nil
 }

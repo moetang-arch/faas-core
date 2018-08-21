@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 )
@@ -90,6 +91,7 @@ func buildBinary(serviceSourcePath string, curDir, packageName string) error {
 }
 
 func runBinary(dir string, binaryName string) error {
+
 	//TODO passing parameter to run
 	cmd := exec.Command(dir + string(os.PathSeparator) + binaryName)
 
@@ -101,6 +103,17 @@ func runBinary(dir string, binaryName string) error {
 	if err != nil {
 		return err
 	}
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		for s := range signalChan {
+			switch s {
+			case os.Interrupt:
+				cmd.Process.Signal(os.Interrupt)
+			}
+		}
+	}()
 
 	go func() {
 		buf := make([]byte, 1024)
