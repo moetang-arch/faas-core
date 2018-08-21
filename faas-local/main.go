@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	InitHandler()
 	fmt.Println("run local...")
 	for {
 		fmt.Println("run1")
