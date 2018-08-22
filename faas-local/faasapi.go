@@ -52,12 +52,40 @@ func NewHandlerStruct(f interface{}) *HandlerStruct {
 		panic(errors.New("unsupported param type"))
 	}
 
-	//TODO out 0
+	// out 0
+	out0 := funcType.Out(0)
+	switch out0.Kind() {
+	case reflect.Ptr:
+		h.resultKind = reflect.Ptr
+		_, ok := reflect.New(out0.Elem()).Interface().(faas.Deserializable)
+		if ok {
+			h.resultDeserialization = true
+		} else {
+			h.resultDeserialization = false
+		}
+	case reflect.Struct:
+		h.resultKind = reflect.Struct
+		_, ok := reflect.New(out0).Elem().Interface().(faas.Deserializable)
+		if ok {
+			h.resultDeserialization = true
+		} else {
+			h.resultDeserialization = false
+		}
+	default:
+		panic(errors.New("unsupported result type"))
+	}
 
 	return h
 }
 
-func (this *HandlerStruct) JsonCall(jsonStr string, ctx context.Context) (string, error) {
+func (this *HandlerStruct) JsonCall(jsonStr string, ctx context.Context) (result string, err error) {
+	defer func() {
+		p := recover()
+		if p != nil {
+			err = errors.New("panic occurs. information:" + fmt.Sprint(p))
+		}
+	}()
+
 	var paramValue reflect.Value
 	if this.paramSerialization {
 		v := reflect.New(this.paramType)
@@ -74,13 +102,34 @@ func (this *HandlerStruct) JsonCall(jsonStr string, ctx context.Context) (string
 		}
 		paramValue = v
 	}
+	var values []reflect.Value
 	if this.paramKind == reflect.Ptr {
-		_ = this.function.Call([]reflect.Value{reflect.ValueOf(ctx), paramValue})
+		// ptr
+		values = this.function.Call([]reflect.Value{reflect.ValueOf(ctx), paramValue})
 	} else {
-		_ = this.function.Call([]reflect.Value{reflect.ValueOf(ctx), paramValue.Elem()})
+		// struct
+		values = this.function.Call([]reflect.Value{reflect.ValueOf(ctx), paramValue.Elem()})
 	}
-	//TODO
-	return "", nil
+
+	errValue := values[1]
+	if !errValue.IsNil() {
+		return "", errValue.Interface().(error)
+	}
+
+	valueValue := values[0]
+	if this.resultKind == reflect.Ptr && valueValue.IsNil() {
+		return "", nil
+	}
+	if this.resultDeserialization {
+		return valueValue.Interface().(faas.Deserializable).ToJson()
+	} else {
+		data, err := json.Marshal(valueValue.Interface())
+		if err != nil {
+			return "", err
+		} else {
+			return string(data), nil
+		}
+	}
 }
 
 func (this *HandlerStruct) BinaryCall(data []byte, ctx context.Context) ([]byte, error) {
