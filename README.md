@@ -29,5 +29,5 @@ Enjoy!
 # 5. How to use: faas-cli run
 
 * support GET/POST method
-* GET: url?param=<JSON>
-* POST: form -> param=<JSON> , content-type -> application/x-www-form-urlencoded
+* GET: url?param=&lt;JSON&gt;
+* POST: form -> param=&lt;JSON&gt; , content-type -> application/x-www-form-urlencoded
