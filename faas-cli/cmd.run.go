@@ -185,8 +185,14 @@ func buildBinaryFile0(buildSrcDir, packageName string, altGoPath string, binaryN
 		cmd.Path = lp
 	}
 	err := cmd.Run()
-	fmt.Println(outBuf.String())
-	fmt.Fprintln(os.Stderr, errBuf.String())
+
+	if output := outBuf.String(); len(output) > 0 {
+		fmt.Println(output)
+	}
+	if erroutput := errBuf.String(); len(erroutput) > 0 {
+		fmt.Fprintln(os.Stderr, erroutput)
+	}
+
 	if err != nil {
 		return err
 	}

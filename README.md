@@ -4,6 +4,7 @@ faas-core
 # 1. Get faas-cli
 
 ```
+go get -u -v github.com/moetang-arch/faas-api
 go get -u -v github.com/moetang-arch/faas-core/faas-cli
 ```
 
@@ -24,3 +25,9 @@ Enjoy!
 # 4. Source requirements
 
 * all source files must be placed into a single directory(pacakge)
+
+# 5. How to use: faas-cli run
+
+* support GET/POST method
+* GET: url?param=<JSON>
+* POST: form -> param=<JSON> , content-type -> application/x-www-form-urlencoded

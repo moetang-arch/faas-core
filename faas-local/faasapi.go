@@ -82,7 +82,7 @@ func (this *HandlerStruct) JsonCall(jsonStr string, ctx context.Context) (result
 	defer func() {
 		p := recover()
 		if p != nil {
-			err = errors.New("panic occurs. information:" + fmt.Sprint(p))
+			err = errors.New("panic occurs. information: " + fmt.Sprint(p))
 		}
 	}()
 
@@ -142,8 +142,6 @@ func (this *HandlerStruct) SupportBinarySerdes() bool {
 }
 
 func InitHandler() map[string]*HandlerStruct {
-	globalNameSpace := faas.GetGlobalServiceNameSpace()
-	fmt.Println(globalNameSpace)
 	serviceMap := faas.GetServiceMap()
 
 	result := make(map[string]*HandlerStruct)
