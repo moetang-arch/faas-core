@@ -31,3 +31,8 @@ Enjoy!
 * support GET/POST method
 * GET: url?param=&lt;JSON&gt;
 * POST: form -> param=&lt;JSON&gt; , content-type -> application/x-www-form-urlencoded
+
+# 6. Planning
+
+* [ ] faas service
+* [ ] deployment
